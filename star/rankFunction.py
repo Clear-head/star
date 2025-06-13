@@ -1,5 +1,5 @@
 from collections import defaultdict
-from GraphMethod import term0_pre, to_between
+from utils import term0_pre, to_between
 import os
 import pandas as pd
 from Setting import Fdata_path

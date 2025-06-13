@@ -3,8 +3,9 @@ import pandas as pd
 import Setting as st
 from collections import defaultdict
 from PySide6.QtCore import QDate
+from utils import format_month, format_day, term0, generate_daily_labels, term0_pre, to_between
 
-# 기본 유틸리티 함수들
+
 def format_day(day: int) -> str:
     return str(day) if day > 9 else '0' + str(day)
 
@@ -374,7 +375,6 @@ def getSale(term, date, data):
     
     return data
 
-# 색상 및 데이터 처리 유틸리티
 def Color(count):
     count = len(count)
     base_colors = ['#669909', '#FFAA00', '#00FF00', '#FF6969', '#6868FC']
