@@ -3,41 +3,52 @@ import pandas as pd
 import Setting as st
 from PySide6.QtCore import QDate
 
+def format_day(day: int) -> str:
+    return str(day) if day > 9 else '0' + str(day)
+
+def format_month(month: int) -> str:
+    return str(month) if month > 9 else '0' + str(month)
+
+def get_days_in_month(month: int, year: int) -> int:
+    if month == 2:
+        return 29 if leap_year(year) else 28
+    elif month in [4, 6, 9, 11]:
+        return 30
+    else:
+        return 31
+
+def generate_daily_labels(year: int, month: int) -> list:
+    days = get_days_in_month(month, year)
+    month_str = format_month(month)
+    return [f"{month_str}-{format_day(day)}" for day in range(1, days + 1)]
+
+def leap_year(year: int) -> bool:
+    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
 def term0_pre(key):
-    """
-    :param key: string ex) yyyy-mm-dd
-    :return: yy-mm-(dd-1)
-
-    """
     yy, mm, dd = key.split('-')
+    yy = int(yy)
+    mm = int(mm)
+    dd = int(dd)
 
-    if dd == '01':
-
-        if mm == '01':
-            yy = str(int(yy) - 1)
-            mm = '12'
-            dd = '31'
-
-        elif mm == '03':
-            if leap_year(int(yy)):
-                dd = '29'
-                mm = '02'
-            else:
-                mm = '02'
-                dd = '28'
-
-        elif mm in ['05', '07', '08', '10', '12']:
-            dd = '30'
-            mm = str(int(mm) - 1) if int(mm) - 1 > 9 else '0' + str(int(mm) - 1)
-
+    if dd == 1:
+        if mm == 1:
+            yy -= 1
+            mm = 12
+            dd = 31
+        elif mm == 3:
+            mm = 2
+            dd = 29 if leap_year(yy) else 28
+        elif mm in [5, 7, 8, 10, 12]:
+            mm -= 1
+            dd = 30
         else:
-            dd = '31'
-            mm = str(int(mm) - 1) if int(mm) - 1 > 9 else '0' + str(int(mm) - 1)
+            mm -= 1
+            dd = 31
     else:
-        dd = str(int(dd) - 1) if int(dd) - 1 > 9 else '0' + str(int(dd) - 1)
+        dd -= 1
 
-    return yy + '-' + mm + '-' + dd
+    return f"{yy}-{format_month(mm)}-{format_day(dd)}"
 
 """
         item_name   :       상품명 가져오는 함수
@@ -91,36 +102,30 @@ def get_dt(term, date):
     data_name = []
 
     year = str(date.year())
-    month = str(date.month()) if date.month() > 9 else '0' + str(date.month())
+    month_int = date.month()
+    month = format_month(month_int)
 
     if term == 0:
-        if date.month() in [2, 4, 6, 9, 11]:
-            for i in range(1, 31):
-                data_name.append(month + '-' + (str(i) if i > 9 else '0' + str(i)))
-            month = str(int(month) + 1) if int(month) + 1 > 9 else '0' + str(int(month) + 1)
-            data_name.append(month + '-' + '01')
+        # 현재 월 데이터
+        data_name.extend(generate_daily_labels(date.year(), month_int))
 
-        elif date.month() in [1, 3, 5, 7, 8, 10]:
-            for i in range(1, 32):
-                day = str(i) if i > 9 else '0' + str(i)
-                data_name.append(month + '-' + day)
-            month = str(int(month) + 1) if int(month) + 1 > 9 else '0' + str(int(month) + 1)
-            data_name.append(month + '-' + '01')
-
-        else:  # 12
-            for i in range(1, 32):
-                data_name.append(month + '-' + (str(i) if i > 9 else '0' + str(i)))
-            data_name.append('01-01')
+        # 다음 달 1일 추가
+        next_month = month_int + 1
+        if next_month > 12:
+            data_name.append("01-01")
+        else:
+            data_name.append(f"{format_month(next_month)}-01")
 
     elif term == 1:
-        for i in range(1, 13):
-            data_name.append(year + '-' + (str(i) if i > 9 else '0' + str(i)))
+        # 월별 데이터
+        data_name = [f"{year}-{format_month(m)}" for m in range(1, 13)]
 
     else:
+        # 연도별 데이터
         for i in os.listdir(st.Fdata_path):
-
-            if i[:4] not in data_name:  # i[:4] = year
-                data_name.append(i[:4])  # if under 5
+            year_prefix = i[:4]
+            if year_prefix not in data_name:
+                data_name.append(year_prefix)
 
     return data_name
 
