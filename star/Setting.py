@@ -1,7 +1,7 @@
 import os
 import re
 
-folder_path = '/Users/saseoghun/Desktop/stardom_sales'
+folder_path = ''
 AIdata_path = os.path.join(folder_path, 'AIdata')
 set_path = os.path.join(folder_path, 'set')
 Fdata_path = os.path.join(folder_path, 'Fdata')

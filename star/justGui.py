@@ -34,8 +34,7 @@ class GuiForm(QWidget):
         self.setLayout(layout)
 
     def select_dir(self):
-        select_path = QFileDialog.getExistingDirectory(self, '', '/Users/saseoghun/Desktop')
-        #   여기 \  로 수정
+        select_path = QFileDialog.getExistingDirectory(self, '', "C:\\")
 
         self.line.setText(select_path)
         st.folder_path = select_path or self.line.text()

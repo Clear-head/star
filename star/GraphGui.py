@@ -8,6 +8,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 import ForExcel as fe
 import GraphMethod as gm
+import rankFunction as rf
 
 matplotlib.rcParams['font.family'] = 'AppleGothic'  # 윈도우로 넘길 때 나눔 고딕으로 바꿔야함 NanumGothic
 matplotlib.rcParams.update({'font.size': 6})  # 윈도우로 넘길 때 사이즈 조절 해야함
@@ -431,7 +432,7 @@ class rankingForm(QWidget):
          time,  # 주문 많은 날짜
          timeCnt,
          result,  # 매출 높은 날짜
-         resultCnt) = gm.ranking(curtxt, 0)
+         resultCnt) = rf.ranking(curtxt, 0)
 
         self.label.setText("음식 주문 좌석 1위" + ' : ' + str(sit) + '번, ' + str(cnt) + '회')
         self.label2.setText("결제수단 1위" + ' : ' + pay + ', ' + str(payCnt) + '회')
@@ -455,7 +456,7 @@ class rankingForm(QWidget):
          time,
          timeCnt,
          result,
-         resultCnt) = gm.ranking(curtxt, 1)
+         resultCnt) = rf.ranking(curtxt, 1)
         self.label8.setText("음식 주문 좌석 2위" + ' : ' + str(sit) + '번, ' + str(cnt) + '회')
         self.label9.setText("결제수단 2위" + ' : ' + pay + ', ' + str(payCnt) + '회')
         self.label10.setText("주문 많은 손님 2위" + ' : ' + name + ', ' + str(nameCnt) + '회')
@@ -478,7 +479,7 @@ class rankingForm(QWidget):
          time,
          timeCnt,
          result,
-         resultCnt) = gm.ranking(curtxt, 2)
+         resultCnt) = rf.ranking(curtxt, 2)
         self.label15.setText("음식 주문 좌석 3위" + ' : ' + str(sit) + '번, ' + str(cnt) + '회')
         self.label16.setText("결제수단 3위" + ' : ' + pay + ', ' + str(payCnt) + '회')
         self.label17.setText("주문 많은 손님 3위" + ' : ' + name + ', ' + str(nameCnt) + '회')
@@ -489,7 +490,7 @@ class rankingForm(QWidget):
 
         # category
         temp = []
-        catesale, key = gm.catesaleRanke(curtxt)
+        catesale, key = rf.catesaleRanke(curtxt)
         for i in range(len(key)):
             temp.append(catesale[key[i]])
 
