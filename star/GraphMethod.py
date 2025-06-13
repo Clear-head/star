@@ -1,13 +1,18 @@
 import os
 import pandas as pd
 import Setting as st
+from collections import defaultdict
 from PySide6.QtCore import QDate
 
+# 기본 유틸리티 함수들
 def format_day(day: int) -> str:
     return str(day) if day > 9 else '0' + str(day)
 
 def format_month(month: int) -> str:
     return str(month) if month > 9 else '0' + str(month)
+
+def leap_year(year: int) -> bool:
+    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
 def get_days_in_month(month: int, year: int) -> int:
     if month == 2:
@@ -21,9 +26,6 @@ def generate_daily_labels(year: int, month: int) -> list:
     days = get_days_in_month(month, year)
     month_str = format_month(month)
     return [f"{month_str}-{format_day(day)}" for day in range(1, days + 1)]
-
-def leap_year(year: int) -> bool:
-    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
 def term0_pre(key):
     yy, mm, dd = key.split('-')
@@ -49,162 +51,6 @@ def term0_pre(key):
         dd -= 1
 
     return f"{yy}-{format_month(mm)}-{format_day(dd)}"
-
-"""
-        item_name   :       상품명 가져오는 함수
-        get_dt :            term 에 비례하여 x축에 둘 것 리턴 : 일, 월, 년
-        count_item  :       count or sale 에 따라 data.value 채워서 리턴
-"""
-
-
-def item_name(term, date):  # term =(0 : day) (1 : month) (2 : year)
-    year = str(date.year())
-    month = str(date.month()) if date.month() > 9 else '0' + str(date.month())
-    name = []
-    path = os.path.join(st.Fdata_path, year + '-' + month + '.csv')
-
-    if term == 0:
-        df = pd.read_csv(path, usecols=[0, 2, 3, 4])
-        df['판매일시'] = pd.to_datetime(df['판매일시'])
-
-        fl = term0(date)
-        f_day = pd.to_datetime(fl[0], format='%Y-%m-%d %H:%M:%S')
-        l_day = pd.to_datetime(fl[1], format='%Y-%m-%d %H:%M:%S')
-
-        df = df[(df['판매일시'].between(f_day, l_day))]
-
-        for i in df['상품명']:
-            if i not in name:
-                name.append(i)
-
-    elif term == 1:
-        df = pd.read_csv(path, usecols=[0, 2, 3, 4])
-        for i in df['상품명']:
-            if i not in name:
-                name.append(i)
-
-    else:
-        df_list = []
-        for i in os.listdir(st.Fdata_path):
-            if i.startswith(year):
-                df = pd.read_csv(os.path.join(st.Fdata_path, i), usecols=[0, 2, 3, 4])
-                df_list.append(df)
-        df = pd.concat(df_list, ignore_index=True)
-        df = df.drop_duplicates()
-
-        for i in df['상품명']:
-            if i not in name:
-                name.append(i)
-    return name, df
-
-
-def get_dt(term, date):
-    data_name = []
-
-    year = str(date.year())
-    month_int = date.month()
-    month = format_month(month_int)
-
-    if term == 0:
-        # 현재 월 데이터
-        data_name.extend(generate_daily_labels(date.year(), month_int))
-
-        # 다음 달 1일 추가
-        next_month = month_int + 1
-        if next_month > 12:
-            data_name.append("01-01")
-        else:
-            data_name.append(f"{format_month(next_month)}-01")
-
-    elif term == 1:
-        # 월별 데이터
-        data_name = [f"{year}-{format_month(m)}" for m in range(1, 13)]
-
-    else:
-        # 연도별 데이터
-        for i in os.listdir(st.Fdata_path):
-            year_prefix = i[:4]
-            if year_prefix not in data_name:
-                data_name.append(year_prefix)
-
-    return data_name
-
-
-def count_item(term, date, data, cs, df):
-    """
-    :param df: dataframe made item_name
-    :param term: int
-    :param date: Qdate, ex) 2023-10-13 11:15
-    :param data: dic, already keys in data
-    :param cs: int : count -> 0 or sale -> 1
-    :return: dic, finished data
-    """
-    df = df[['판매일시', '상품명', '판매개수' if cs == 0 else '합계가격']]
-
-    if term == 0:
-        fl = term0(date)
-        f_day = pd.to_datetime(fl[0], format='%Y-%m-%d %H:%M:%S')
-        l_day = pd.to_datetime(fl[1], format='%Y-%m-%d %H:%M:%S')
-
-        df = df[df['판매일시'].between(f_day, l_day)]
-
-        for i in range(len(df)):
-            data[df.iloc[:, 1].tolist()[i]] += int(df.iloc[:, 2].tolist()[i])
-
-    else:
-        for i in range(len(df)):
-            data[df.iloc[:, 1].tolist()[i]] += int(df.iloc[:, 2].tolist()[i])
-
-    return data
-
-
-def getSale(term, date, data):
-    usecol = [0, 4, 7]
-    year = str(date.year())
-    month = str(date.month()) if date.month() > 9 else '0' + str(date.month())
-    path = os.path.join(st.Fdata_path, year + '-' + month + '.csv')
-
-    if term == 0:
-        df = pd.read_csv(path, usecols=usecol)
-        df = df[['판매일시', '합계가격']]
-        df['판매일시'] = pd.to_datetime(df['판매일시'], format='%Y-%m-%d %H:%M:%S')
-        df = df.sort_values(by='판매일시', ascending=False)
-        print('data')
-        print(data)
-
-        for i in range(len(df)):  # 2023-10-18 09:00:00
-            data_name = str(df.iloc[i, 0])[5:10]
-            pre_name = term0_pre(str(df.iloc[i, 0])[:10])[5:10]
-
-            if to_between(df.iloc[i, 0]):
-                data[data_name] += int(df.iloc[i, 1])
-            else:
-                data[pre_name] += int(df.iloc[i, 1])
-
-    elif term == 1:
-        for i in os.listdir(st.Fdata_path):
-            if i.startswith(year):
-                df = pd.read_csv(os.path.join(st.Fdata_path, i), usecols=usecol)
-                df = df[['판매일시', '합계가격']]
-
-                for j in df.itertuples():
-                    data[i[:7]] += int(j[2])
-
-    else:
-        df_list = []
-        for i in os.listdir(st.Fdata_path):
-            df = pd.read_csv(os.path.join(st.Fdata_path, i), usecols=usecol)
-            df = df[['판매일시', '합계가격']]
-            df_list.append(df)
-
-        df = pd.concat(df_list, ignore_index=True)
-        df = df.drop_duplicates()
-
-        for i in df.itertuples():
-            data[str(i[1][:4])] += int(i[2])
-
-    return data
-
 
 def term0(date):
     """
@@ -256,7 +102,6 @@ def term0(date):
 
     return [f_day, l_day]
 
-
 def to_between(i):
     """
     :param i: dataframe's one row ex) 2023-10-18 09:00:00
@@ -277,186 +122,370 @@ def to_between(i):
     else:
         return False
 
+# CSV 파일 처리 관련 함수들
+def get_csv_path(date):
+    """날짜를 기반으로 CSV 파일 경로 생성"""
+    year = str(date.year())
+    month = format_month(date.month())
+    return os.path.join(st.Fdata_path, year + '-' + month + '.csv')
 
-def leap_year(year):
-    if year % 4 == 0 and year % 100 != 0:
-        return True
+def read_sales_data(path):
+    """판매 데이터 CSV 파일 읽기"""
+    return pd.read_csv(path, usecols=[0, 2, 3, 4])
 
-    elif year % 400 == 0:
-        return True
+def read_sales_data_for_amount(path):
+    """판매 데이터 CSV 파일에서 필요한 컬럼만 읽기"""
+    usecol = [0, 4, 7]
+    df = pd.read_csv(path, usecols=usecol)
+    return df[['판매일시', '합계가격']]
+
+def get_unique_product_names(df):
+    """데이터프레임에서 중복 없는 상품명 리스트 추출"""
+    return df['상품명'].drop_duplicates().tolist()
+
+def filter_dataframe_by_date_range(df, date):
+    """일자별 데이터 필터링"""
+    df['판매일시'] = pd.to_datetime(df['판매일시'])
+    
+    fl = term0(date)
+    f_day = pd.to_datetime(fl[0], format='%Y-%m-%d %H:%M:%S')
+    l_day = pd.to_datetime(fl[1], format='%Y-%m-%d %H:%M:%S')
+    
+    return df[df['판매일시'].between(f_day, l_day)]
+
+def get_yearly_data(year):
+    """연도별 모든 CSV 파일 데이터 통합"""
+    df_list = []
+    for filename in os.listdir(st.Fdata_path):
+        if filename.startswith(year):
+            file_path = os.path.join(st.Fdata_path, filename)
+            df = read_sales_data(file_path)
+            df_list.append(df)
+    
+    if df_list:
+        df = pd.concat(df_list, ignore_index=True)
+        return df.drop_duplicates()
+    return pd.DataFrame()
+
+# item_name 관련 함수들
+def process_daily_data(date):
+    """일자별 데이터 처리"""
+    path = get_csv_path(date)
+    df = read_sales_data(path)
+    df = filter_dataframe_by_date_range(df, date)
+    name = get_unique_product_names(df)
+    return name, df
+
+def process_monthly_data(date):
+    """월별 데이터 처리"""
+    path = get_csv_path(date)
+    df = read_sales_data(path)
+    name = get_unique_product_names(df)
+    return name, df
+
+def process_yearly_data(date):
+    """연도별 데이터 처리"""
+    year = str(date.year())
+    df = get_yearly_data(year)
+    name = get_unique_product_names(df)
+    return name, df
+
+def item_name(term, date):  # term =(0 : day) (1 : month) (2 : year)
+    """
+    기간별 상품명 목록과 데이터프레임 반환
+    
+    Args:
+        term (int): 0=일자별, 1=월별, 2=연도별
+        date: 날짜 객체
+    
+    Returns:
+        tuple: (상품명 리스트, 데이터프레임)
+    """
+    if term == 0:
+        return process_daily_data(date)
+    elif term == 1:
+        return process_monthly_data(date)
+    else:
+        return process_yearly_data(date)
+
+# get_dt 함수
+def get_dt(term, date):
+    data_name = []
+
+    year = str(date.year())
+    month_int = date.month()
+    month = format_month(month_int)
+
+    if term == 0:
+        # 현재 월 데이터
+        data_name.extend(generate_daily_labels(date.year(), month_int))
+
+        # 다음 달 1일 추가
+        next_month = month_int + 1
+        if next_month > 12:
+            data_name.append("01-01")
+        else:
+            data_name.append(f"{format_month(next_month)}-01")
+
+    elif term == 1:
+        # 월별 데이터
+        data_name = [f"{year}-{format_month(m)}" for m in range(1, 13)]
 
     else:
-        return False
+        # 연도별 데이터
+        for i in os.listdir(st.Fdata_path):
+            year_prefix = i[:4]
+            if year_prefix not in data_name:
+                data_name.append(year_prefix)
 
+    return data_name
 
-# 색 무작위 설정
+# count_item 관련 함수들
+def filter_count_data_by_date(df, date):
+    """count_item용 날짜별 데이터 필터링"""
+    fl = term0(date)
+    f_day = pd.to_datetime(fl[0], format='%Y-%m-%d %H:%M:%S')
+    l_day = pd.to_datetime(fl[1], format='%Y-%m-%d %H:%M:%S')
+    
+    return df[df['판매일시'].between(f_day, l_day)]
 
-def Color(count):
-    count = len(count)
-    color = ['#669909', '#FFAA00', '#00FF00', '#FF6969', '#6868FC']
-    for_re = []
-    for i in range(count // len(color)):
-        for j in color:
-            for_re.append(j)
+def prepare_count_dataframe(df, cs):
+    """count_item용 데이터프레임 준비"""
+    column_name = '판매개수' if cs == 0 else '합계가격'
+    return df[['판매일시', '상품명', column_name]]
 
-    if count // len(color) != 0:
-        for i in range(count % len(color)):
-            for_re.append(color[i])
+def accumulate_product_data(df, data):
+    """상품별 데이터 누적"""
+    product_names = df.iloc[:, 1]  # 상품명 컬럼
+    values = df.iloc[:, 2]  # 판매개수 또는 합계가격 컬럼
+    
+    for product_name, value in zip(product_names, values):
+        data[product_name] += int(value)
 
-    return for_re
+def process_daily_count_data(df, date, data):
+    """일자별 count 데이터 처리"""
+    filtered_df = filter_count_data_by_date(df, date)
+    accumulate_product_data(filtered_df, data)
 
+def process_general_count_data(df, data):
+    """일반 count 데이터 처리 (월별, 연도별)"""
+    accumulate_product_data(df, data)
 
-def delete_data(data):
-    max_value = max(data.values())
-    temp = 0
-    delkey = []
-    for (key, value) in data.items():
-        if value < max_value * 0.05:
-            delkey.append(key)
-            temp += value
+def count_item(term, date, data, cs, df):
+    """
+    :param df: dataframe made item_name
+    :param term: int
+    :param date: Qdate, ex) 2023-10-13 11:15
+    :param data: dic, already keys in data
+    :param cs: int : count -> 0 or sale -> 1
+    :return: dic, finished data
+    """
+    df = prepare_count_dataframe(df, cs)
 
-    for i in delkey:
-        del data[i]
-
-    data['기타'] = temp
+    if term == 0:
+        process_daily_count_data(df, date, data)
+    else:
+        process_general_count_data(df, data)
 
     return data
 
+# getSale 관련 함수들
+def process_daily_sales_data(df, data):
+    """일자별 판매 데이터 처리"""
+    df['판매일시'] = pd.to_datetime(df['판매일시'], format='%Y-%m-%d %H:%M:%S')
+    df = df.sort_values(by='판매일시', ascending=False)
+    
+    for i in range(len(df)):
+        sale_datetime = df.iloc[i, 0]
+        sale_amount = int(df.iloc[i, 1])
+        
+        data_name = str(sale_datetime)[5:10]
+        pre_name = term0_pre(str(sale_datetime)[:10])[5:10]
+        
+        if to_between(sale_datetime):
+            data[data_name] += sale_amount
+        else:
+            data[pre_name] += sale_amount
+
+def process_monthly_sales_data(year, data):
+    """월별 판매 데이터 처리"""
+    for filename in os.listdir(st.Fdata_path):
+        if filename.startswith(year):
+            file_path = os.path.join(st.Fdata_path, filename)
+            df = read_sales_data_for_amount(file_path)
+            
+            month_key = filename[:7]  # YYYY-MM 형태
+            for row in df.itertuples():
+                data[month_key] += int(row[2])
+
+def process_yearly_sales_data(data):
+    """연도별 판매 데이터 처리"""
+    df_list = []
+    
+    # 모든 CSV 파일 읽어서 통합
+    for filename in os.listdir(st.Fdata_path):
+        file_path = os.path.join(st.Fdata_path, filename)
+        df = read_sales_data_for_amount(file_path)
+        df_list.append(df)
+    
+    if df_list:
+        df = pd.concat(df_list, ignore_index=True)
+        df = df.drop_duplicates()
+        
+        for row in df.itertuples():
+            year_key = str(row[1][:4])  # 연도 추출
+            data[year_key] += int(row[2])
+
+def process_daily_sale(date, data):
+    """일자별 판매 데이터 처리 메인 함수"""
+    path = get_csv_path(date)
+    df = read_sales_data_for_amount(path)
+    print('data')
+    print(data)
+    process_daily_sales_data(df, data)
+
+def process_monthly_sale(date, data):
+    """월별 판매 데이터 처리 메인 함수"""
+    year = str(date.year())
+    process_monthly_sales_data(year, data)
+
+def process_yearly_sale(data):
+    """연도별 판매 데이터 처리 메인 함수"""
+    process_yearly_sales_data(data)
+
+def getSale(term, date, data):
+    """
+    기간별 판매 데이터 집계
+    
+    Args:
+        term (int): 0=일자별, 1=월별, 2=연도별
+        date: 날짜 객체
+        data (dict): 집계 결과를 저장할 딕셔너리
+    
+    Returns:
+        dict: 업데이트된 판매 데이터 딕셔너리
+    """
+    if term == 0:
+        process_daily_sale(date, data)
+    elif term == 1:
+        process_monthly_sale(date, data)
+    else:
+        process_yearly_sale(data)
+    
+    return data
+
+# 색상 및 데이터 처리 유틸리티
+def Color(count):
+    count = len(count)
+    base_colors = ['#669909', '#FFAA00', '#00FF00', '#FF6969', '#6868FC']
+    repeat_times = count // len(base_colors)
+    remainder = count % len(base_colors)
+
+    return base_colors * repeat_times + base_colors[:remainder]
+
+def delete_data(data):
+    max_value = max(data.values())
+    threshold = max_value * 0.05
+
+    removed_total = sum(value for key, value in data.items() if value < threshold)
+    data = {key: value for key, value in data.items() if value >= threshold}
+
+    data['기타'] = removed_total
+    return data
 
 """
         이 밑으로는 rankform 관련 함수
 """
 
+def count_frequency(series):
+    freq = defaultdict(int)
+    for value in series:
+        freq[value] += 1
+    return freq
+
+def accumulate_sales(df, name_col, value_col):
+    sales = defaultdict(int)
+    for name, value in zip(df[name_col], df[value_col]):
+        sales[name] += value
+    return sales
+
+def process_time_orders(df, time_col):
+    time_freq = defaultdict(int)
+    for timestamp in df[time_col]:
+        date_str = str(timestamp)[:11]
+        prev_day = term0_pre(date_str)
+
+        key = date_str if to_between(timestamp) else prev_day
+        time_freq[key] += 1
+    return time_freq
+
+def process_date_sales(df, time_col, value_col):
+    result = defaultdict(int)
+    df[time_col] = pd.to_datetime(df[time_col], format='%Y-%m-%d %H:%M:%S')
+
+    for timestamp, value in zip(df[time_col], df[value_col]):
+        date_key = str(timestamp)[:10]
+        prev_key = term0_pre(date_key)[5:10]
+
+        key = date_key if to_between(timestamp) else prev_key
+        result[key] += value
+
+    return result
+
+def sort_and_rank(d):
+    return sorted(d.items(), key=lambda x: (-x[1], x[0]))
 
 def ranking(text, rank):
-    sit = {}
-    pay = {}
-    name = {}
-    cate = {}
-    sale = {}
-    time = {}
-    result = {}
-
     path = os.path.join(st.Fdata_path, text)
-    df = pd.read_csv(path)  # 판매일시, 상품분류, 상품명, 합계가격, PC번호, 고객명, 결재수단
-    df = df[(df['상품분류'] != '프린트')]
+    df = pd.read_csv(path)
+    df = df[df['상품분류'] != '프린트']
 
-    for i in df['PC번호']:  # 주문 많은 PC
-        if i not in sit:
-            sit[i] = 1
-        else:
-            sit[i] += 1
+    sit = count_frequency(df['PC번호'])
+    pay = count_frequency(df['결제수단'])
+    name = count_frequency(df['고객명(ID)'])
+    cate = count_frequency(df['상품분류'])
+    sale = accumulate_sales(df, '상품명', '합계가격')
+    time = process_time_orders(df, '판매일시')
+    result = process_date_sales(df[['판매일시', '합계가격']].copy(), '판매일시', '합계가격')
 
-    for i in df['결제수단']:  # 결제 수단
-        if i not in pay:
-            pay[i] = 1
-        else:
-            pay[i] += 1
+    # 예외 처리
+    sit.pop(0, None)
+    name.pop('-(-)', None)
+    sale.pop('주차비용', None)
 
-    for i in df['고객명(ID)']:  # 주문 많은 손님
-        if i not in name:
-            name[i] = 1
-        else:
-            name[i] += 1
+    sit = sort_and_rank(sit)
+    pay = sort_and_rank(pay)
+    name = sort_and_rank(name)
+    cate = sort_and_rank(cate)
+    sale = sort_and_rank(sale)
+    time = sort_and_rank(time)
+    result = sort_and_rank(result)
 
-    for i in df['상품분류']:  # 주문 많은 카테고리
-        if i not in cate:
-            cate[i] = 1
-        else:
-            cate[i] += 1
-
-    for k in range(len(df['상품명'])):  # 매뉴 판매 갯수
-        i = df.iloc[k, 2]
-        j = df.iloc[k, 3]
-
-        if i not in sale:
-            sale[i] = j
-        else:
-            sale[i] += j
-
-    for i in df['판매일시']:  # 주문 많은 날 갯수
-        # 2022-06-01 07:12
-        a = str(i)[:11]
-        b = term0_pre(a)
-        if to_between(i):
-            if a not in time:
-                time[a] = 1
-            else:
-                time[a] += 1
-        else:
-            if b not in time:
-                time[b] = 1
-            else:
-                time[b] += 1
-
-    df = df.loc[:, ['판매일시', '합계가격']].reset_index()  # 매출 높은 날짜
-    df['판매일시'] = pd.to_datetime(df['판매일시'], format='%Y-%m-%d %H:%M:%S')
-
-    for i in range(len(df)):
-        data_name = str(df['판매일시'][i])[:10]
-        pre_name = term0_pre(data_name)[5:10]
-
-        if to_between(df['판매일시'][i]):
-            if data_name not in result:
-                result[data_name] = df['합계가격'][i]
-            else:
-                result[data_name] += df['합계가격'][i]
-
-        # 09:00:00 미만
-        else:
-            if pre_name not in result:
-                result[pre_name] = df['합계가격'][i]
-
-            else:
-                result[pre_name] += df['합계가격'][i]
-
-    del sit[0]
-    del name['-(-)']
-    if '주차비용' in sale.keys():
-        del sale['주차비용']
-
-    sit = sorted(sit.items(), key=lambda x: (-x[1], x[0]))
-    pay = sorted(pay.items(), key=lambda x: (-x[1], x[0]))
-    name = sorted(name.items(), key=lambda x: (-x[1], x[0]))
-    cate = sorted(cate.items(), key=lambda x: (-x[1], x[0]))
-    sale = sorted(sale.items(), key=lambda x: (-x[1], x[0]))
-    time = sorted(time.items(), key=lambda x: (-x[1], x[0]))
-    result = sorted(result.items(), key=lambda x: (-x[1], x[0]))
-
-    return (sit[rank][0], sit[rank][1],
-            pay[rank][0], pay[rank][1],
-            name[rank][0], name[rank][1],
-            cate[rank][0], cate[rank][1],
-            sale[rank][0], sale[rank][1],
-            time[rank][0], time[rank][1],
-            result[rank][0], result[rank][1]
-            )
-
+    return (
+        sit[rank][0], sit[rank][1],
+        pay[rank][0], pay[rank][1],
+        name[rank][0], name[rank][1],
+        cate[rank][0], cate[rank][1],
+        sale[rank][0], sale[rank][1],
+        time[rank][0], time[rank][1],
+        result[rank][0], result[rank][1]
+    )
 
 def catesaleRanke(text):
     path = os.path.join(st.Fdata_path, text)
     df = pd.read_csv(path)
-    catesale = {}
+    df = df[df['상품분류'] != '프린트']
 
-    df = df[(df['상품분류'] != '프린트')]
-    for q in range(len(df)):  # 카테고리 별 상품 순위
-        c = df.iloc[q, 1]
-        i = df.iloc[q, 2]
-        j = int(df.iloc[q, 3])
-        # structure
-        # catesale = {'상품분류' : {'상품명' : 1}, }
-        if c not in catesale:
-            catesale[c] = {}
-            catesale[c][i] = j
-        elif c in catesale and i not in catesale[c]:
-            catesale[c][i] = j
-        else:
-            catesale[c][i] += j
+    catesale = defaultdict(lambda: defaultdict(int))
 
-    catesale_key = []  # '상품분류' list
-    for i in catesale:
-        catesale_key.append(i)
-    for i in catesale_key:
-        catesale[i] = sorted(catesale[i].items(), key=lambda x: x[1], reverse=True)
+    for _, row in df.iterrows():
+        category = row['상품분류']
+        item = row['상품명']
+        price = int(row['합계가격'])
+        catesale[category][item] += price
 
-    return catesale, catesale_key
+    catesale_sorted = {}
+    for cat, items in catesale.items():
+        catesale_sorted[cat] = sorted(items.items(), key=lambda x: x[1], reverse=True)
+
+    return catesale_sorted, list(catesale_sorted.keys())
