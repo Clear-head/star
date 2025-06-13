@@ -9,6 +9,7 @@ from matplotlib.figure import Figure
 import ForExcel as fe
 import GraphMethod as gm
 import rankFunction as rf
+from os import path
 
 matplotlib.rcParams['font.family'] = 'AppleGothic'  # 윈도우로 넘길 때 나눔 고딕으로 바꿔야함 NanumGothic
 matplotlib.rcParams.update({'font.size': 6})  # 윈도우로 넘길 때 사이즈 조절 해야함
@@ -29,11 +30,13 @@ plt.rcParams['axes.unicode_minus'] = False
 
 
 class pastSaleForm(QWidget):  # 이전 매출
-    def __init__(self, parent=None):
+    def __init__(self, path, parent=None):
         QWidget.__init__(self, parent)
         self.date = QDate()
         self.isC = None
         self.mainWindow = None
+        self.folder_path = path
+        self.Fdata_path = path.join(path, "Fdata")
 
         #   groupboxShape
         groupboxShape = QGroupBox('모양')
@@ -190,10 +193,10 @@ class pastSaleForm(QWidget):  # 이전 매출
         data = {}
 
         if xlabel == 0:  # item is checked
-            data_name, df = gm.item_name(term, date)
+            data_name, df = gm.item_name(term, date, self.Fdata_path)
 
         else:  # sale is checked
-            data_name = gm.get_dt(term, date)
+            data_name = gm.get_dt(term, date, self.Fdata_path)
 
         for i in data_name:
             data[i] = 0
@@ -207,7 +210,7 @@ class pastSaleForm(QWidget):  # 이전 매출
                 data = gm.delete_data(data)
 
             else:  # how many sales
-                data = gm.getSale(term, date, data)
+                data = gm.getSale(term, date, data, self.Fdata_path)
         except(Exception,):
             self.warning.setText('기간 버튼은 매출 버튼, 상품 버튼은 상품~~버튼만 선택')
 
@@ -241,16 +244,17 @@ class pastSaleForm(QWidget):  # 이전 매출
     def return_window(self):
         from justGui import mainWindow
         self.hide()
-        self.mainWindow = mainWindow()
+        self.mainWindow = mainWindow(self.folder_path)
         self.mainWindow.show()
 
 
 class calculateForm(QWidget):  # 미래 매출
-    def __init__(self, parent=None):
+    def __init__(self, path, parent=None):
         QWidget.__init__(self, parent)
         self.mainWindow = None
         self.btn = QPushButton('이전 화면', self)
         self.btn.clicked.connect(self.return_window)
+        self.folder_path = path
 
         layout = QHBoxLayout()
         layout.addWidget(self.btn)
@@ -260,16 +264,16 @@ class calculateForm(QWidget):  # 미래 매출
     def return_window(self):
         from justGui import mainWindow
         self.hide()
-        self.mainWindow = mainWindow()
+        self.mainWindow = mainWindow(self.folder_path)
         self.mainWindow.show()
 
 
 class rankingForm(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, path, parent=None):
         QWidget.__init__(self, parent)
         self.mainWindow = None
         self.warn = QLabel('주의! 파일 단위 결과만 보여짐, 서비스 제외')
-
+        self.path = path
         self.btn = QPushButton('이전 화면', self)
         self.btn.clicked.connect(self.return_window)
 
@@ -432,7 +436,7 @@ class rankingForm(QWidget):
          time,  # 주문 많은 날짜
          timeCnt,
          result,  # 매출 높은 날짜
-         resultCnt) = rf.ranking(curtxt, 0)
+         resultCnt) = rf.ranking(curtxt, 0, self.path)
 
         self.label.setText("음식 주문 좌석 1위" + ' : ' + str(sit) + '번, ' + str(cnt) + '회')
         self.label2.setText("결제수단 1위" + ' : ' + pay + ', ' + str(payCnt) + '회')
@@ -456,7 +460,7 @@ class rankingForm(QWidget):
          time,
          timeCnt,
          result,
-         resultCnt) = rf.ranking(curtxt, 1)
+         resultCnt) = rf.ranking(curtxt, 1, self.path)
         self.label8.setText("음식 주문 좌석 2위" + ' : ' + str(sit) + '번, ' + str(cnt) + '회')
         self.label9.setText("결제수단 2위" + ' : ' + pay + ', ' + str(payCnt) + '회')
         self.label10.setText("주문 많은 손님 2위" + ' : ' + name + ', ' + str(nameCnt) + '회')
@@ -479,7 +483,7 @@ class rankingForm(QWidget):
          time,
          timeCnt,
          result,
-         resultCnt) = rf.ranking(curtxt, 2)
+         resultCnt) = rf.ranking(curtxt, 2, self.path)
         self.label15.setText("음식 주문 좌석 3위" + ' : ' + str(sit) + '번, ' + str(cnt) + '회')
         self.label16.setText("결제수단 3위" + ' : ' + pay + ', ' + str(payCnt) + '회')
         self.label17.setText("주문 많은 손님 3위" + ' : ' + name + ', ' + str(nameCnt) + '회')
@@ -490,7 +494,7 @@ class rankingForm(QWidget):
 
         # category
         temp = []
-        catesale, key = rf.catesaleRanke(curtxt)
+        catesale, key = rf.catesaleRanke(curtxt, self.path)
         for i in range(len(key)):
             temp.append(catesale[key[i]])
 

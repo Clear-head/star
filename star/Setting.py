@@ -1,15 +1,10 @@
 import os
 import re
 
-folder_path = ''
-AIdata_path = os.path.join(folder_path, 'AIdata')
-set_path = os.path.join(folder_path, 'set')
-Fdata_path = os.path.join(folder_path, 'Fdata')
-
-excel_list_path = os.path.join(set_path, "excel_list.txt")
-weather_list_path = os.path.join(set_path, "weather_list.txt")
-AIdata_list_path = os.path.join(set_path, "AIdata_list.txt")
-Fdata_list_path = os.path.join(set_path, "Fdata_list.txt")
+# excel_list_path = os.path.join(set_path, "excel_list.txt")
+# weather_list_path = os.path.join(set_path, "weather_list.txt")
+# AIdata_list_path = os.path.join(set_path, "AIdata_list.txt")
+# Fdata_list_path = os.path.join(set_path, "Fdata_list.txt")
 
 
 def create_folder(path):
@@ -31,11 +26,24 @@ def make_list(path):
     except (Exception,):
         pass
 
+def excel_list_path(set_path):
+    return os.path.join(set_path, "excel_list.txt")
 
-def read_list():
+def weather_list_path(set_path):
+    return os.path.join(set_path, "weather_list.txt")
+
+def AIdata_list_path(set_path):
+    return os.path.join(set_path, "AIdata_list.txt")
+
+def Fdata_list_path(set_path):
+    return os.path.join(set_path, "Fdata_list.txt")
+
+
+def read_list(set_path):
+
     import ForExcel as fe
     try:
-        with open(excel_list_path, "r") as f:
+        with open(excel_list_path(set_path), "r") as f:
             for i in f.read().split(','):
                 fe.excel_list.append(i)
             if fe.excel_list[-1] == '':
@@ -44,7 +52,7 @@ def read_list():
         print('read_list --> excel')
 
     try:
-        with open(weather_list_path, "r") as f:
+        with open(weather_list_path(set_path), "r") as f:
             for i in f.read().split(','):
                 fe.weather_list.append(i)
             if fe.weather_list[-1] == '':
@@ -52,7 +60,7 @@ def read_list():
     except (Exception,):
         print('read_list --> weather')
 
-    with open(AIdata_list_path, "r") as f:
+    with open(AIdata_list_path(set_path), "r") as f:
         for i in f.read().split(','):
             fe.AIdata_list.append(i)
         if fe.AIdata_list[-1] == '':
@@ -65,7 +73,7 @@ def read_list():
                 fe.Fdata_list[a[0]] = a[1]
 
 
-def add_execl_list():
+def add_execl_list(folder_path, set_path):
     from ForExcel import excel_list
 
     for file_name in os.listdir(folder_path):
@@ -84,19 +92,19 @@ def add_execl_list():
         print('add_execl_list -- > error')
 
 
-def add_AIdata_list(name):
-    from ForExcel import AIdata_list
-    if name in AIdata_list:
-        return
-    try:
-        with open(os.path.join(set_path, 'AIdata_list.txt'), "a") as f:
-            f.write(name + ', ')
+# def add_AIdata_list(name, set_path):
+#     from ForExcel import AIdata_list
+#     if name in AIdata_list:
+#         return
+#     try:
+#         with open(os.path.join(set_path, 'AIdata_list.txt'), "a") as f:
+#             f.write(name + ', ')
 
-    except(Exception,):
-        print('add_aidata_list -- > error')
+#     except(Exception,):
+#         print('add_aidata_list -- > error')
 
 
-def add_weather_list():
+def add_weather_list(AIdata_path, set_path):
     from ForExcel import weather_list
 
     try:
@@ -115,7 +123,7 @@ def add_weather_list():
         print('add_weather_list -- > error')
 
 
-def add_fdata_list(name, tf):
+def add_fdata_list(name, tf, set_path):
     from ForExcel import Fdata_list
     try:
         Fdata_list[name] = tf

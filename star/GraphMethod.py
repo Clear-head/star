@@ -3,7 +3,6 @@ import pandas as pd
 import Setting as st
 from collections import defaultdict
 from PySide6.QtCore import QDate
-from utils import format_month, format_day, term0, generate_daily_labels, term0_pre, to_between
 
 
 def format_day(day: int) -> str:
@@ -124,11 +123,11 @@ def to_between(i):
         return False
 
 # CSV 파일 처리 관련 함수들
-def get_csv_path(date):
+def get_csv_path(date, Fdata_path):
     """날짜를 기반으로 CSV 파일 경로 생성"""
     year = str(date.year())
     month = format_month(date.month())
-    return os.path.join(st.Fdata_path, year + '-' + month + '.csv')
+    return os.path.join(Fdata_path, year + '-' + month + '.csv')
 
 def read_sales_data(path):
     """판매 데이터 CSV 파일 읽기"""
@@ -154,12 +153,12 @@ def filter_dataframe_by_date_range(df, date):
     
     return df[df['판매일시'].between(f_day, l_day)]
 
-def get_yearly_data(year):
+def get_yearly_data(year, Fdata_path):
     """연도별 모든 CSV 파일 데이터 통합"""
     df_list = []
-    for filename in os.listdir(st.Fdata_path):
+    for filename in os.listdir(Fdata_path):
         if filename.startswith(year):
-            file_path = os.path.join(st.Fdata_path, filename)
+            file_path = os.path.join(Fdata_path, filename)
             df = read_sales_data(file_path)
             df_list.append(df)
     
@@ -177,9 +176,9 @@ def process_daily_data(date):
     name = get_unique_product_names(df)
     return name, df
 
-def process_monthly_data(date):
+def process_monthly_data(date, Fdata_path):
     """월별 데이터 처리"""
-    path = get_csv_path(date)
+    path = get_csv_path(date, Fdata_path)
     df = read_sales_data(path)
     name = get_unique_product_names(df)
     return name, df
@@ -191,7 +190,7 @@ def process_yearly_data(date):
     name = get_unique_product_names(df)
     return name, df
 
-def item_name(term, date):  # term =(0 : day) (1 : month) (2 : year)
+def item_name(term, date, Fdata_path):  # term =(0 : day) (1 : month) (2 : year)
     """
     기간별 상품명 목록과 데이터프레임 반환
     
@@ -203,14 +202,14 @@ def item_name(term, date):  # term =(0 : day) (1 : month) (2 : year)
         tuple: (상품명 리스트, 데이터프레임)
     """
     if term == 0:
-        return process_daily_data(date)
+        return process_daily_data(date, Fdata_path)
     elif term == 1:
         return process_monthly_data(date)
     else:
         return process_yearly_data(date)
 
 # get_dt 함수
-def get_dt(term, date):
+def get_dt(term, date, Fdata_path):
     data_name = []
 
     year = str(date.year())
@@ -234,7 +233,7 @@ def get_dt(term, date):
 
     else:
         # 연도별 데이터
-        for i in os.listdir(st.Fdata_path):
+        for i in os.listdir(Fdata_path):
             year_prefix = i[:4]
             if year_prefix not in data_name:
                 data_name.append(year_prefix)
@@ -268,10 +267,6 @@ def process_daily_count_data(df, date, data):
     filtered_df = filter_count_data_by_date(df, date)
     accumulate_product_data(filtered_df, data)
 
-def process_general_count_data(df, data):
-    """일반 count 데이터 처리 (월별, 연도별)"""
-    accumulate_product_data(df, data)
-
 def count_item(term, date, data, cs, df):
     """
     :param df: dataframe made item_name
@@ -286,7 +281,7 @@ def count_item(term, date, data, cs, df):
     if term == 0:
         process_daily_count_data(df, date, data)
     else:
-        process_general_count_data(df, data)
+        accumulate_product_data(df, data)
 
     return data
 
@@ -308,24 +303,24 @@ def process_daily_sales_data(df, data):
         else:
             data[pre_name] += sale_amount
 
-def process_monthly_sales_data(year, data):
+def process_monthly_sales_data(year, data, Fdata_path):
     """월별 판매 데이터 처리"""
-    for filename in os.listdir(st.Fdata_path):
+    for filename in os.listdir(Fdata_path):
         if filename.startswith(year):
-            file_path = os.path.join(st.Fdata_path, filename)
+            file_path = os.path.join(Fdata_path, filename)
             df = read_sales_data_for_amount(file_path)
             
             month_key = filename[:7]  # YYYY-MM 형태
             for row in df.itertuples():
                 data[month_key] += int(row[2])
 
-def process_yearly_sales_data(data):
+def process_yearly_sales_data(data, Fdata_path):
     """연도별 판매 데이터 처리"""
     df_list = []
     
     # 모든 CSV 파일 읽어서 통합
-    for filename in os.listdir(st.Fdata_path):
-        file_path = os.path.join(st.Fdata_path, filename)
+    for filename in os.listdir(Fdata_path):
+        file_path = os.path.join(Fdata_path, filename)
         df = read_sales_data_for_amount(file_path)
         df_list.append(df)
     
@@ -341,20 +336,14 @@ def process_daily_sale(date, data):
     """일자별 판매 데이터 처리 메인 함수"""
     path = get_csv_path(date)
     df = read_sales_data_for_amount(path)
-    print('data')
-    print(data)
     process_daily_sales_data(df, data)
 
-def process_monthly_sale(date, data):
+def process_monthly_sale(date, data, Fdata_path):
     """월별 판매 데이터 처리 메인 함수"""
     year = str(date.year())
-    process_monthly_sales_data(year, data)
+    process_monthly_sales_data(year, data, Fdata_path)
 
-def process_yearly_sale(data):
-    """연도별 판매 데이터 처리 메인 함수"""
-    process_yearly_sales_data(data)
-
-def getSale(term, date, data):
+def getSale(term, date, data, Fdata_path):
     """
     기간별 판매 데이터 집계
     
@@ -369,9 +358,9 @@ def getSale(term, date, data):
     if term == 0:
         process_daily_sale(date, data)
     elif term == 1:
-        process_monthly_sale(date, data)
+        process_monthly_sale(date, data, Fdata_path)
     else:
-        process_yearly_sale(data)
+        process_yearly_sales_data(data, Fdata_path)
     
     return data
 

@@ -1,8 +1,7 @@
 from collections import defaultdict
-from utils import term0_pre, to_between
+from GraphMethod import term0_pre, to_between
 import os
 import pandas as pd
-from Setting import Fdata_path
 
 """
     rankform 관련 함수
@@ -46,7 +45,7 @@ def process_date_sales(df, time_col, value_col):
 def sort_and_rank(d):
     return sorted(d.items(), key=lambda x: (-x[1], x[0]))
 
-def ranking(text, rank):
+def ranking(text, rank, Fdata_path):
     path = os.path.join(Fdata_path, text)
     df = pd.read_csv(path)
     df = df[df['상품분류'] != '프린트']
@@ -82,7 +81,7 @@ def ranking(text, rank):
         result[rank][0], result[rank][1]
     )
 
-def catesaleRanke(text):
+def catesaleRanke(text, Fdata_path):
     path = os.path.join(Fdata_path, text)
     df = pd.read_csv(path)
     df = df[df['상품분류'] != '프린트']

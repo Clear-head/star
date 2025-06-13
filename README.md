@@ -1,8 +1,13 @@
 # 엑셀 파일로 출력된 매출 통계 정리 프로그램   made by Clear-head
 
-## 
-포스기에서 자동 변환된 매출 데이터를 excel -> csv 파일로 변환 후 가공해서 지정 폴더에 저장.
+##
+포스기에서 집계된 매출 데이터를 excel -> csv 파일로 변환 후 가공해서 지정 폴더에 저장.   
+각종 통계를 GUi를 통해 사용자에게 보여줌
 
+
+## Guide
+1. 첫화면: 데이터 모여있는 폴더 선택
+2. 
 
 ## Used stack
 <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
