@@ -11,12 +11,13 @@
 3. 매뉴별 원하는 기능 상세 별명 되어있으 바로 사용 가능.
 
 ## Used stack
-<img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
-<img src="https://img.shields.io/badge/PYQt-%23217346.svg?style=for-the-badge&logo=Qt&logoColor=white">
-<img src="https://img.shields.io/badge/Numpy-013243?style=for-the-badge&logo=numpy&logoColor=white" />
-<img src="https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white" />
-<img src="https://img.shields.io/badge/Matplotlib-11557C?style=for-the-badge&logo=python&logoColor=white" />
+<p align="left">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/PYQt-%23217346.svg?style=for-the-badge&logo=Qt&logoColor=white">
+  <img src="https://img.shields.io/badge/Numpy-013243?style=for-the-badge&logo=numpy&logoColor=white" />
+  <img src="https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white" />
+  <img src="https://img.shields.io/badge/Matplotlib-11557C?style=for-the-badge&logo=python&logoColor=white" />
+</p>
 
-### fail to apply
-
+## fail menu
 매출 예측을 위한 학습 데이터 부족으로 인한 기능 추가 실패
